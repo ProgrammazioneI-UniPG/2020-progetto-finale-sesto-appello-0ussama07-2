@@ -5,7 +5,7 @@
 #include "game.h"
 
 // Config
-static int min_tunnel_length = 1; // 1 for testing | 10 for playing
+static int min_tunnel_length = 10; // 1 for testing | 10 for playing
 static int energy_tank_size = 4;
 static int collection_tank_size = 10;
 
@@ -43,6 +43,7 @@ static void finish_tunnel(Player*);
 static void advance(Player*);
 static void knock_down(Player*);
 static void exit_tunnel(Player*);
+static void update_chances(Player* player);
 
 static void go_around(Excavator*);
 static void move_to_next(Excavator*);
@@ -51,7 +52,6 @@ static void increase_energy(Excavator*, int);
 static void decrease_energy(Excavator*, int);
 static void collect_molasses(Excavator*, int);
 static void empty_tanks(Excavator*);
-static void update_chances(Player* player);
 
 static Cavern* create_cavern(Cavern_chances);
 static Cavern* get_next_cavern(Cavern*);
@@ -487,7 +487,7 @@ void play()
 		}
 
 		
-		if (player->excavator.position->state != exit_cavern)
+		if (get_next_cavern(player->excavator.position) != NULL)
 		{
 			printf(" [1] Advance\n");
 		}
@@ -514,7 +514,7 @@ void play()
 		switch (command)
 		{
 		case 1:
-			if (player->excavator.position->state != exit_cavern)
+			if (get_next_cavern(player->excavator.position) != NULL)
 			{
 				advance(player);
 			}
@@ -611,17 +611,18 @@ static void advance(Player* player)
 
 static void knock_down(Player* player)
 {
-	Cavern* next_cavern = get_next_cavern(player->excavator.position);
+	// delete current tunnel before digging a new one
+	Cavern* current = get_next_cavern(player->excavator.position);
+	Cavern* free_me = NULL;
+
+	while (current != NULL)
+	{
+		free_me = current;
+		current = get_next_cavern(current);
+		free(free_me);
+	}
+
 	Cavern* new_cavern = create_cavern(player->chances);
-
-	//              new_cavern ____
-	//                             \
-	//  position -> next_cavern -> next_cavern->forward | left | right
-	set_next_cavern(new_cavern, get_next_cavern(next_cavern), get_next_direction(next_cavern));
-
-	//           ___ new_cavern ___
-	//          /                  \
-	//  position -> next_cavern -> next_cavern->forward | left | right
 	set_next_cavern(&player->excavator.position, new_cavern, get_empty_direction(player->excavator.position));
 
 	advance(&player->excavator);
@@ -633,6 +634,11 @@ static void exit_tunnel(Player* player)
 	player->excavator.position = NULL;
 	player->finished = 1;
 	solo_play = 1;
+}
+
+static void update_chances(Player* player)
+{
+
 }
 
 static void go_around(Excavator* excavator)
@@ -759,11 +765,6 @@ static void empty_tanks(Excavator* excavator)
 {
 	excavator->energy_tank = 0;
 	excavator->collection_tank = 0;
-}
-
-static void update_chances(Player* player)
-{
-
 }
 
 // End Game
@@ -945,4 +946,3 @@ static void free_memory()
 	delete_tunnel(&arvais);
 	delete_tunnel(&hartornen);
 }
-
