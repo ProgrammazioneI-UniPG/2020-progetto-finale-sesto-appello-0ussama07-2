@@ -5,7 +5,7 @@
 #include "game.h"
 
 // Config
-static int min_tunnel_length = 10; // 1 for testing | 10 for playing
+static int min_tunnel_length = 1; // 1 for testing | 10 for playing
 static int energy_tank_size = 4;
 static int collection_tank_size = 10;
 
@@ -16,8 +16,8 @@ static Cavern_chances default_chances = {
 
 // Players
 
-static Player arvais = { NULL, { 50, 30, 20, 50, 35, 15 }, { NULL, 4, 0}, 0, 0 };
-static Player hartornen = { NULL, { 50, 30, 20, 50, 35, 15 }, { NULL, 4, 0}, 0, 0 };
+static Player arvais = { NULL, { 40, 0, 20, 40, 50, 30, 20, 50, 35, 15 }, { NULL, 4, 0}, 0, 0 };
+static Player hartornen = { NULL, { 40, 0, 20, 40, 50, 30, 20, 50, 35, 15 }, { NULL, 4, 0}, 0, 0 };
 
 // Trackers
 
@@ -56,8 +56,11 @@ static void empty_tanks(Excavator*);
 static Cavern* create_cavern(Cavern_chances);
 static Cavern* get_next_cavern(Cavern*);
 static Cavern_direction get_next_direction(Cavern*);
+static Cavern_direction get_empty_direction(Cavern*);
 static void set_next_cavern(Cavern*, Cavern*, Cavern_direction);
 static void delete_tunnel(Player*);
+
+static Cavern* get_next_cavern(Cavern*);
 static Unexpected_type get_unexpected(Cavern_chances);
 static Molasses_quantity get_molasses(Cavern_chances);
 
@@ -139,6 +142,8 @@ static int keep_tunnel()
 			invalid = 1;
 		}
 	} while (invalid == 1);
+
+	return 1;
 }
 
 static void create_tunnel(Player* player)
@@ -569,6 +574,7 @@ void play()
 		}
 	} while (game_over == 0);
 
+	clear_output();
 	printf(" Game Over\n\n");
 
 	if (arvais.finished == 0 || arvais.excavator.energy_tank < 0)
@@ -623,9 +629,9 @@ static void knock_down(Player* player)
 	}
 
 	Cavern* new_cavern = create_cavern(player->chances);
-	set_next_cavern(&player->excavator.position, new_cavern, get_empty_direction(player->excavator.position));
+	set_next_cavern(player->excavator.position, new_cavern, get_empty_direction(player->excavator.position));
 
-	advance(&player->excavator);
+	advance(player);
 	decrease_energy(&player->excavator, 1);
 }
 
@@ -665,6 +671,7 @@ static void go_around(Excavator* excavator)
 static void move_to_next(Excavator* excavator)
 {
 	Cavern* next_cavern = get_next_cavern(excavator->position);
+	excavator->position = next_cavern;
 
 	switch (next_cavern->state)
 	{
@@ -707,7 +714,8 @@ static void move_to_next(Excavator* excavator)
 	do
 	{
 		invalid = 0;
-
+		
+		clear_output();
 		printf(" %d molasses found. Where do you want to put them?\n\n", quantity);
 		printf(" [1] Enery Tank \n");
 		printf(" [2] Collection Tank \n\n");
@@ -795,13 +803,14 @@ static Cavern* create_cavern(Cavern_chances chances)
 		exit(-1);
 	}
 
+	new_cavern->state = get_cavern_type(chances);
 	new_cavern->unexprected = get_unexpected(chances);
 	new_cavern->molasses = get_molasses(chances);
 	new_cavern->forward = NULL;
 	new_cavern->left = NULL;
 	new_cavern->right = NULL;
 
-	new_cavern;
+	return new_cavern;
 }
 
 static Cavern_direction get_next_direction(Cavern* cavern)
@@ -896,6 +905,37 @@ static void delete_tunnel(Player* player)
 	}
 
 	player->tunnel = NULL;
+}
+
+static Cavern_type get_cavern_type(Cavern_chances chances)
+{
+	int percent = rand() % 100;
+
+	int min = 0;
+	int max = min + chances.normal_cavern;
+
+	if (within(percent, min, max) == 1)
+	{
+		return normal_cavern;
+	}
+
+	min = max;
+	max = min + chances.special_cavern;
+
+	if (within(percent, min, max) == 1)
+	{
+		return special_cavern;
+	}
+
+	min = max;
+	max = min + chances.bumpy_cavern;
+
+	if (within(percent, min, max) == 1)
+	{
+		return special_cavern;
+	}
+
+	return exit_cavern;
 }
 
 static Unexpected_type get_unexpected(Cavern_chances chances)
