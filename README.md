@@ -3,11 +3,11 @@ Template progetto finale per l'esame di Programmazione I con Laboratorio a.a. 20
 
 Inserire
 
-Nome:
+Nome: oussama
 
-Cognome:
+Cognome: el omari
 
-Matricola:
+Matricola: 323111
 
 
 ed eventuali note sulla realizzazione del progetto, come nuove funzionalità aggiunte o modificate rispetto al testo del progetto assegnato.
