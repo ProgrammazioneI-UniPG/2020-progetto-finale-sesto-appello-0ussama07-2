@@ -470,6 +470,9 @@ static void finish_tunnel(Player* player)
 
 void play()
 {
+	arvais.excavator.position = arvais.tunnel;
+	hartornen.excavator.position = hartornen.tunnel;
+
 	turn = 1;
 	Player* player = &arvais;
 
